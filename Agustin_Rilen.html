@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python-Based Garden Simulator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #1e261c;
+    color: #f3f4f6;
+}
+
+.code-font {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.glass-panel {
+    background: rgba(40, 54, 35, 0.45);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(120, 143, 114, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+</style>
+</head>
+
+<body class="min-h-screen p-4 flex flex-col justify-between overflow-x-hidden">
+
+<header class="w-full max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-2 border-b border-[#43533c]/40">
+
+<div>
+    <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-extrabold tracking-tight text-emerald-100">
+            Python-Based Garden Simulator
+        </h1>
+
+        <span id="version-badge"
+            class="text-[10px] font-bold uppercase tracking-widest text-emerald-400/90 bg-emerald-950/50 border border-emerald-800/60 px-2 py-0.5 rounded-full">
+        </span>
+    </div>
+
+    <p class="text-xs text-emerald-300/80 font-medium">
+        SDG 2, 13, 15
+    </p>
+</div>
+
+<div class="flex items-center gap-3">
+
+    <div class="glass-panel px-4 py-2 rounded-xl flex flex-col items-end">
+        <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">
+            DAY
+        </span>
+        <span class="text-lg font-extrabold text-white" id="day-counter">
+            1
+        </span>
+    </div>
+
+    <div class="glass-panel px-4 py-2 rounded-xl flex flex-col items-end">
+        <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">
+            SCORE
+        </span>
+        <span class="text-lg font-extrabold text-emerald-300" id="stewardship-counter">
+            0%
+        </span>
+    </div>
+
+</div>
+</header>
+
+<main class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+
+<!-- RESOURCE PANEL -->
+<section id="resources-section"
+    class="lg:col-span-3 glass-panel rounded-2xl p-4">
+
+    <h2 class="text-base font-bold text-emerald-200 border-b border-[#43533c]/30 pb-2 mb-4 flex items-center gap-2">
+        <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
+        Resource Storage
+    </h2>
+
+    <div class="space-y-4">
+
+        <div>
+            <div class="flex justify-between text-xs font-semibold">
+                <span class="text-blue-300">Water Reserves</span>
+                <span id="water-text">0 / 200 L</span>
+            </div>
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+                <div id="water-bar"
+                    class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full"
+                    style="width:0%">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between text-xs font-semibold">
+                <span class="text-emerald-300">Seed Inventory</span>
+                <span id="seeds-text">0 / 100</span>
+            </div>
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+                <div id="seeds-bar"
+                    class="bg-gradient-to-r from-emerald-500 to-lime-400 h-full rounded-full"
+                    style="width:0%">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between text-xs font-semibold">
+                <span class="text-amber-300">Solar Energy</span>
+                <span id="energy-text">0 / 120 Wh</span>
+            </div>
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+                <div id="energy-bar"
+                    class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full"
+                    style="width:0%">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between text-xs font-semibold">
+                <span class="text-rose-300">Community Hope</span>
+                <span id="hope-text">0 / 100</span>
+            </div>
+
+            <div class="w-full bg-[#1b2219] h-2.5 rounded-full overflow-hidden">
+                <div id="hope-bar"
+                    class="bg-gradient-to-r from-rose-500 to-pink-400 h-full rounded-full"
+                    style="width:0%">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-between text-xs font-semibold">
+            <span class="text-yellow-200">Coins / Dues</span>
+            <span id="coins-text" class="text-yellow-200">0 Coins</span>
+        </div>
+
+    </div>
+</section>
+
+
+<!-- CENTER PANEL -->
+<section class="lg:col-span-6 flex flex-col gap-4">
+
+    <div class="flex bg-[#192218] p-1.5 rounded-xl border border-emerald-800/40 w-fit">
+
+        <button onclick="switchTab('game')" id="tab-game"
+            class="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#283623] text-emerald-100">
+            Interactive Sanctuary
+        </button>
+
+        <button onclick="switchTab('code')" id="tab-code"
+            class="px-4 py-1.5 rounded-lg text-xs font-bold text-emerald-400/80">
+            Student Code Editor
+        </button>
+
+        <button onclick="switchTab('book')" id="tab-book"
+            class="px-4 py-1.5 rounded-lg text-xs font-bold text-emerald-400/80">
+            Plant Book
+        </button>
+
+    </div>
+
+
+    <!-- GAME -->
+    <div id="view-game"
+        class="glass-panel rounded-2xl p-6 min-h-[380px]">
+
+        <div class="flex items-center justify-between mb-4">
+
+            <div>
+                <h2 class="text-lg font-bold text-white">
+                    Sanctuary Garden Grid
+                </h2>
+
+                <p class="text-xs text-emerald-300">
+                    Select a plant and click an empty soil tile.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-emerald-300">
+                    Seed Bag:
+                </span>
+
+                <select id="crop-selector"
+                    class="bg-[#1b2219] border border-emerald-700 text-emerald-100 text-sm rounded-xl px-3 py-2">
+                </select>
+            </div>
+
+        </div>
+
+        <div id="garden-grid"
+            class="grid grid-cols-5 gap-3">
+        </div>
+
+    </div>
+
+
+    <!-- PLANT BOOK -->
+    <div id="view-book"
+        class="glass-panel rounded-2xl p-6 min-h-[380px] hidden">
+
+        <div class="flex items-center justify-between mb-4">
+
+            <div>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-emerald-400"></i>
+                    Plant Book
+                </h2>
+
+                <p class="text-xs text-emerald-300">
+                    Explore the plant hierarchy.
+                </p>
+            </div>
+
+            <span id="plant-book-count"
+                class="text-xs font-bold text-emerald-300 bg-emerald-950/50 border border-emerald-800/60 px-3 py-1 rounded-full">
+                0 / 0 unlocked
+            </span>
+
+        </div>
+
+        <p id="plant-book-empty"
+            class="text-sm text-emerald-300/80">
+            Run Topic 4 to generate the Plant Book.
+        </p>
+
+        <div id="plant-book-list"
+            class="space-y-2">
+        </div>
+
+    </div>
+
+
+    <!-- CODE EDITOR -->
+    <div id="view-code"
+        class="glass-panel rounded-2xl p-6 flex flex-col flex-grow hidden">
+
+        <h2 class="font-bold mb-3 flex items-center gap-2">
+            <i data-lucide="code" class="w-5 h-5 text-emerald-400"></i>
+            Student Code Editor
+        </h2>
+
+        <select id="topic-selector"
+            onchange="loadTopic()"
+            class="w-full bg-[#1b2219] border border-emerald-700 rounded-xl p-3 mb-4 text-sm">
+        </select>
+
+        <textarea id="code-editor"
+            readonly
+            class="flex-1 bg-[#0a0f0a] border border-emerald-800 rounded-xl p-4 code-font text-sm font-medium leading-relaxed"
+            spellcheck="false">
+        </textarea>
+
+        <button onclick="runPythonCode()"
+            class="mt-4 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2">
+
+            <i data-lucide="play" class="w-4 h-4"></i>
+            Run Python Code
+
+        </button>
+
+        <div id="output-console"
+            class="mt-4 bg-black/70 border border-emerald-900 rounded-xl p-4 text-xs max-h-48 overflow-auto font-mono whitespace-pre-wrap">
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- RIGHT PANEL -->
+<section class="lg:col-span-3 flex flex-col gap-4">
+
+    <div class="glass-panel rounded-2xl p-4">
+
+        <h3 class="font-bold text-emerald-400 mb-3 flex items-center gap-2">
+            <i data-lucide="cloud-lightning" class="w-4 h-4"></i>
+            Climate Queue (FIFO)
+        </h3>
+
+        <div id="climate-queue"
+            class="space-y-3 text-sm">
+        </div>
+
+    </div>
+
+
+    <div class="glass-panel rounded-2xl p-4 flex-1 flex flex-col">
+
+        <h3 class="font-bold text-emerald-400 mb-3 flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4"></i>
+            Action History
+        </h3>
+
+        <div id="action-stack"
+            class="flex-1 space-y-2 text-sm overflow-auto">
+        </div>
+
+        <button onclick="triggerUndo()"
+            class="mt-4 w-full bg-[#2a3825] hover:bg-[#34462e] text-emerald-200 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 border border-emerald-800">
+
+            <i data-lucide="undo-2" class="w-4 h-4"></i>
+            Undo
+
+        </button>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<script>
+
+const APP_VERSION = "0.4.2";
+
+let pyodideInstance = null;
+let gardenPlants = {};
+let plantEmoji = {};
+let displayActionHistory = [];
+
+
+/* ==========================================================
+   TOPIC TEMPLATES
+   ========================================================== */
+
+const topicTemplates = {
+
+1: {
+    title: "Python OOP + Big O + Stacks",
+
+    code: `# TOPIC 1 - PYTHON OOP + BIG O + STACKS
+
+class Plant:
+    """Encapsulation: private attributes exposed through read-only properties."""
+
+    def __init__(self, name, water_need, growth_stage=0):
+        self._name = name
+        self._water_need = water_need
+        self._growth_stage = growth_stage
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def water_need(self):
+        return self._water_need
+
+    @property
+    def growth_stage(self):
+        return self._growth_stage
+
+    def grow(self):
+        # O(1) time, O(1) auxiliary space
+        self._growth_stage += 1
+        return self._growth_stage
+
+
+class Action:
+    """One history entry: a label plus optional data needed to reverse it."""
+
+    def __init__(self, description, undo_data=None):
+        self.description = description
+        self.undo_data = undo_data
+
+
+class ActionHistoryStack:
+    # Two separate stacks: undone actions move to redo_stack instead of being lost.
+
+    def __init__(self):
+        self.undo_stack = []
+        self.redo_stack = []
+
+    # push: O(1) amortized time, O(1) auxiliary space
+    def push(self, description, undo_data=None):
+        self.undo_stack.append(Action(description, undo_data))
+        self.redo_stack.clear()   # a new action ends the old redo branch
+        pushAction("Push: " + description)
+
+    # pop: O(1) time, O(1) auxiliary space
+    def pop(self):
+        if not self.undo_stack:
+            pushAction("Pop: stack empty")
+            return None
+        action = self.undo_stack.pop()
+        pushAction("Pop: " + action.description)
+        return action
+
+    # undo: O(1) time, O(1) auxiliary space
+    def undo(self):
+        if not self.undo_stack:
+            pushAction("Undo: nothing to undo")
+            return None
+        action = self.undo_stack.pop()
+        self.redo_stack.append(action)
+        pushAction("Undo: " + action.description)
+        return action
+
+    # redo: O(1) time, O(1) auxiliary space
+    def redo(self):
+        if not self.redo_stack:
+            pushAction("Redo: nothing to redo")
+            return None
+        action = self.redo_stack.pop()
+        self.undo_stack.append(action)
+        pushAction("Redo: " + action.description)
+        return action
+
+    # peek: O(1) time, O(1) auxiliary space
+    def peek(self):
+        return self.undo_stack[-1] if self.undo_stack else None
+
+    # is_empty: O(1) time, O(1) auxiliary space
+    def is_empty(self):
+        return len(self.undo_stack) == 0
+
+
+# The shared game history is created once, so re-running keeps the player's progress.
+if "history" not in globals():
+    history = ActionHistoryStack()
+
+if "sample_plant" not in globals():
+    sample_plant = Plant("Tomato", 5)
+
+print("Plant:", sample_plant.name, "| water need:", sample_plant.water_need)
+sample_plant.grow()
+print("Growth stage after growing:", sample_plant.growth_stage)
+
+# Demo on a throwaway stack so the game's real history starts empty.
+demo = ActionHistoryStack()
+demo.push("Plant Tomato")
+demo.push("Water Tomato")
+demo.undo()
+demo.redo()
+print()
+print("Demo undo stack size:", len(demo.undo_stack))
+print("Demo redo stack size:", len(demo.redo_stack))
+`
+},
+
+2: {
+    title: "Queues & Deques (FIFO Elements)",
+
+    code: `# TOPIC 2 - QUEUES & DEQUES (FIFO)
+
+from collections import deque
+
+# Why deque? append() adds at the back and popleft() removes from the front,
+# both in O(1). A plain list needs pop(0), which is O(n): every remaining
+# item must shift one slot left.
+
+# Climate events are plain strings; this table says what each one does to resources.
+EVENT_EFFECTS = {
+    "Drought Warning": {"water": -25},
+    "Monsoon Rain": {"hope": 5},
+    "Heat Wave": {"energy": -15},
+    "Strong Wind": {"seeds": -5}
+}
+
+
+class ClimateEventQueue:
+
+    def __init__(self):
+        self.events = deque()
+
+    # enqueue: O(1) time (the panel refresh copies the queue: O(n))
+    def enqueue(self, event_name):
+        self.events.append(event_name)
+        self.show()
+
+    # dequeue: O(1) time (the panel refresh copies the queue: O(n))
+    def dequeue(self):
+        if not self.events:
+            self.show()
+            return None
+        event_name = self.events.popleft()
+        self.show()
+        return event_name
+
+    # front: O(1) time, O(1) auxiliary space
+    def front(self):
+        return self.events[0] if self.events else None
+
+    # size: O(1) time, O(1) auxiliary space
+    def size(self):
+        return len(self.events)
+
+    # show: O(n) - sends the FULL queue to the Climate Queue panel
+    def show(self):
+        updateClimateQueue(list(self.events))
+
+
+if "climate_queue" not in globals():
+    climate_queue = ClimateEventQueue()
+    for name in ("Drought Warning", "Monsoon Rain", "Heat Wave"):
+        climate_queue.enqueue(name)
+
+climate_queue.show()
+print("Climate Queue initialized.")
+print("Number of waiting events:", climate_queue.size())
+print("Next event:", climate_queue.front())
+`
+},
+
+3: {
+    title: "Static/Dynamic Arrays, 2D Lists, & Memory Structures",
+
+    code: `# ==========================================================
+# TOPIC 3 - ARRAYS, 2D LISTS, AND MEMORY STRUCTURES
+# Uses history (Topic 1) and climate_queue (Topic 2): run 1 -> 2 -> 3.
+# ==========================================================
+
+import random
+
+def _require(*names):
+    missing = [n for n in names if n not in globals()]
+    if missing:
+        raise RuntimeError("Run Topics 1 and 2 first. Missing: " + ", ".join(missing))
+
+_require("history", "climate_queue")
+
+
+class GardenPlant:
+
+    def __init__(self, name, emoji, price):
+        self.name = name
+        self.emoji = emoji
+        self.price = price
+
+
+class Resources:
+    CAPS = {"water": 200, "seeds": 100, "energy": 120, "hope": 100, "coins": None}
+
+    def __init__(self, water, seeds, energy, hope, coins):
+        self.values = {"water": water, "seeds": seeds, "energy": energy,
+                       "hope": hope, "coins": coins}
+
+    def get(self, key):
+        return self.values[key]
+
+    def change(self, key, amount):
+        value = self.values[key] + amount
+        cap = self.CAPS[key]
+        self.values[key] = max(0, value if cap is None else min(cap, value))
+
+    def sync(self):
+        updateResources(**self.values)
+
+
+# Fixed-size 2D list vs dynamic array: all 25 cells are allocated up front and the
+# grid is never resized, so grid[row][col] is O(1) and memory use is predictable.
+# A dynamic array (the plant catalog below) over-allocates spare capacity and, when
+# full, copies everything into a bigger block: amortized O(1) append, but an
+# occasional O(n) resize and some wasted memory.
+ROWS = 5
+COLUMNS = 5
+HAZARD_EVERY = 3
+
+# Created only once, so re-running this topic keeps the player's garden.
+if "plant_catalog" not in globals():
+    # Dynamic array: a Python list that grows.
+    plant_catalog = [
+        GardenPlant("Carrot", "🥕", 40),
+        GardenPlant("Tomato", "🍅", 60),
+        GardenPlant("Potato", "🥔", 50),
+        GardenPlant("Strawberry", "🍓", 80)
+    ]
+    # Fixed-size 2D list: one NEW list per row.
+    garden = [[None for column in range(COLUMNS)] for row in range(ROWS)]
+    resources = Resources(water=200, seeds=90, energy=110, hope=80, coins=999)
+    hazard_counter = {"count": 0}
+
+
+def add_plant_to_catalog(plant):
+    # O(1) amortized time
+    plant_catalog.append(plant)
+    display_catalog()
+
+
+def find_plant(name):
+    # O(n) linear scan, fine for a tiny catalog
+    for plant in plant_catalog:
+        if plant.name == name:
+            return plant
+    return None
+
+
+def position_to_index(row, column):
+    # O(1): row-major mapping
+    return row * COLUMNS + column
+
+
+def index_to_position(index):
+    # O(1)
+    return index // COLUMNS, index % COLUMNS
+
+
+def place_plant(row, column, plant):
+    # O(1) - assumes the caller already validated the tile
+    garden[row][column] = plant
+    addPlantToGrid(position_to_index(row, column), plant.name)
+
+
+def remove_plant(row, column):
+    # O(1)
+    removed = garden[row][column]
+    garden[row][column] = None
+    addPlantToGrid(position_to_index(row, column), "")
+    return removed
+
+
+def display_catalog():
+    # O(n)
+    addPlantsToDropdown([(p.name, p.emoji, p.price) for p in plant_catalog])
+
+
+def trigger_hazard_if_due():
+    hazard_counter["count"] += 1
+    if hazard_counter["count"] < HAZARD_EVERY:
+        return None
+    hazard_counter["count"] = 0
+    event = climate_queue.dequeue()          # FIFO: oldest hazard strikes first
+    if event is None:
+        return None
+    effects = EVENT_EFFECTS[event]
+    for resource, change in effects.items():
+        resources.change(resource, change)
+    # Rolling forecast so the queue never runs dry (enqueue refreshes the panel).
+    climate_queue.enqueue(random.choice(list(EVENT_EFFECTS)))
+    summary = ", ".join(f"{change:+d} {res}" for res, change in effects.items())
+    return f"{event} hit the garden! ({summary})"
+
+
+# Called by the page when a tile is clicked.
+def handle_tile_click(row, column, plant_name):
+    plant = find_plant(plant_name)
+    if plant is None:
+        return "Pick a seed from the Seed Bag first."
+    if not (0 <= row < ROWS and 0 <= column < COLUMNS):
+        return "That tile is outside the garden."
+    if garden[row][column] is not None:
+        return f"({row}, {column}) is already planted."
+    if resources.get("coins") < plant.price:
+        return f"Not enough coins for {plant.name} ({plant.price}c)."
+    if resources.get("seeds") < 1:
+        return "Out of seeds!"
+
+    resources.change("coins", -plant.price)
+    resources.change("seeds", -1)
+    place_plant(row, column, plant)
+    history.push(
+        f"Planted {plant.name} at ({row}, {column})",
+        {"row": row, "column": column, "cost": plant.price}
+    )
+    message = trigger_hazard_if_due()
+    resources.sync()
+    return message
+
+
+# Called by the page when Undo is pressed.
+def undo_last_action():
+    action = history.undo()                  # pops the REAL stack
+    if action is None:
+        return None
+    data = action.undo_data
+    if data:
+        removed = remove_plant(data["row"], data["column"])
+        if removed is not None:
+            resources.change("coins", data["cost"])
+            resources.change("seeds", 1)
+        if hazard_counter["count"] > 0:
+            hazard_counter["count"] -= 1
+        resources.sync()
+    return action.description
+
+
+display_catalog()
+resources.sync()
+
+print("Dynamic plant catalog:", len(plant_catalog))
+print("Garden dimensions:", ROWS, "x", COLUMNS)
+sample_index = position_to_index(2, 3)
+print("Grid position (2, 3) maps to flat index:", sample_index)
+print("Flat index", sample_index, "maps back to:", index_to_position(sample_index))
+print("Topic 3 ready! Open Interactive Sanctuary and click a tile.")
+`
+},
+
+4: {
+    title: "Hierarchical Trees & Traversals",
+
+    code: `# ==========================================================
+# TOPIC 4 - HIERARCHICAL TREES AND TRAVERSALS
+# ==========================================================
+
+from collections import deque
+
+
+class Node:
+
+    def __init__(self, name, emoji="🌱"):
+        self.name = name
+        self.emoji = emoji
+        self.children = []
+
+    # O(1) time, O(1) auxiliary space
+    def add_child(self, child):
+        self.children.append(child)
+
+
+class PlantTree:
+
+    def __init__(self):
+        self.root = Node(
+            "Garden Plants",
+            "🌳"
+        )
+
+    # O(1) time, O(1) auxiliary space
+    def add_family(self, family_name, emoji, members):
+        family = Node(
+            family_name,
+            emoji
+        )
+
+        self.root.add_child(family)
+
+        for name, member_emoji in members:
+            family.add_child(
+                Node(name, member_emoji)
+            )
+
+    # O(n) time, O(n) space
+    def preorder(self):
+        result = []
+
+        def visit(node, level):
+            result.append(
+                (level, node)
+            )
+
+            for child in node.children:
+                visit(child, level + 1)
+
+        visit(self.root, 0)
+
+        return result
+
+    # O(n) time, O(n) space
+    def postorder(self):
+        result = []
+
+        def visit(node, level):
+            for child in node.children:
+                visit(child, level + 1)
+
+            result.append(
+                (level, node)
+            )
+
+        visit(self.root, 0)
+
+        return result
+
+    # O(n) time, O(n) space
+    def level_order(self):
+        result = []
+
+        waiting = deque()
+        waiting.append(
+            (self.root, 0)
+        )
+
+        while waiting:
+
+            node, level = waiting.popleft()
+
+            result.append(
+                (level, node)
+            )
+
+            for child in node.children:
+                waiting.append(
+                    (child, level + 1)
+                )
+
+        return result
+
+
+plant_tree = PlantTree()
+
+
+plant_tree.add_family(
+    "Vegetables",
+    "🥕",
+    [
+        ("Carrot", "🥕"),
+        ("Potato", "🥔"),
+        ("Tomato", "🍅")
+    ]
+)
+
+plant_tree.add_family(
+    "Fruits",
+    "🍓",
+    [
+        ("Strawberry", "🍓"),
+        ("Apple", "🍎"),
+        ("Mango", "🥭")
+    ]
+)
+
+plant_tree.add_family(
+    "Herbs",
+    "🌿",
+    [
+        ("Basil", "🌿"),
+        ("Mint", "🍃")
+    ]
+)
+
+
+# Preorder traversal
+print("PREORDER TRAVERSAL")
+
+for level, node in plant_tree.preorder():
+
+    print(
+        "  " * level
+        + node.emoji
+        + " "
+        + node.name
+    )
+
+
+# Postorder traversal
+print()
+print("POSTORDER TRAVERSAL")
+
+for level, node in plant_tree.postorder():
+
+    print(
+        "  " * level
+        + node.name
+    )
+
+
+# Level-order traversal
+print()
+print("LEVEL-ORDER TRAVERSAL")
+
+for level, node in plant_tree.level_order():
+
+    print(
+        "Level",
+        level,
+        ":",
+        node.name
+    )
+
+
+# Build data for the Plant Book UI.
+book_rows = []
+
+for level, node in plant_tree.preorder():
+
+    if level == 0:
+        continue
+
+    unlocked = False
+
+    if "plant_catalog" in globals():
+        unlocked = any(
+            plant.name == node.name
+            for plant in plant_catalog
+        )
+
+    book_rows.append(
+        (
+            level - 1,
+            node.emoji,
+            node.name,
+            unlocked,
+            "Plant family member"
+        )
+    )
+
+
+unlocked_count = sum(
+    1 for row in book_rows if row[3]
+)
+
+total_count = len(book_rows)
+
+renderPlantBook(
+    book_rows,
+    unlocked_count,
+    total_count
+)
+
+print()
+print("Plant hierarchy successfully created.")
+print("Total plant entries:", total_count)
+print("Unlocked entries:", unlocked_count)
+`
+}
+
+};
+
+
+/* ==========================================================
+   PYODIDE INITIALIZATION
+   ========================================================== */
+
+async function initPyodide() {
+
+    if (pyodideInstance) return;
+
+    const output =
+        document.getElementById("output-console");
+
+    output.innerHTML =
+        '<span class="text-amber-400">Loading Python...</span>';
+
+    try {
+
+        pyodideInstance =
+            await loadPyodide();
+
+        pyodideInstance.globals.set(
+            "pushAction",
+            pushAction
+        );
+
+        pyodideInstance.globals.set(
+            "updateResources",
+            updateResources
+        );
+
+        pyodideInstance.globals.set(
+            "updateClimateQueue",
+            updateClimateQueue
+        );
+
+        pyodideInstance.globals.set(
+            "addPlantToGrid",
+            addPlantToGrid
+        );
+
+        pyodideInstance.globals.set(
+            "addPlantsToDropdown",
+            addPlantsToDropdown
+        );
+
+        pyodideInstance.globals.set(
+            "renderPlantBook",
+            renderPlantBook
+        );
+
+        await pyodideInstance.runPythonAsync(`
+import sys
+from js import document
+
+class Console:
+    def write(self, text):
+        if text and text.strip():
+            el = document.getElementById("output-console")
+            if el:
+                el.innerHTML += text.replace("\\n", "<br>")
+    def flush(self):
+        pass
+
+sys.stdout = Console()
+`);
+
+        output.innerHTML =
+            '<span class="text-emerald-400">Python is ready.</span>';
+
+    } catch (error) {
+
+        output.innerHTML =
+            '<span class="text-red-400">Python failed to load.</span>';
+
+        throw error;
+    }
+}
+
+
+/* ==========================================================
+   RESOURCE DISPLAY
+   ========================================================== */
+
+function updateResources(
+    water = 0,
+    seeds = 0,
+    energy = 0,
+    hope = 0,
+    coins = 0
+) {
+
+    if (
+        typeof water === "object" &&
+        water !== null
+    ) {
+
+        const values = water;
+
+        water = values.water ?? 0;
+        seeds = values.seeds ?? 0;
+        energy = values.energy ?? 0;
+        hope = values.hope ?? 0;
+        coins = values.coins ?? 0;
+    }
+
+    document.getElementById("water-text").textContent =
+        `${water} / 200 L`;
+
+    document.getElementById("seeds-text").textContent =
+        `${seeds} / 100`;
+
+    document.getElementById("energy-text").textContent =
+        `${energy} / 120 Wh`;
+
+    document.getElementById("hope-text").textContent =
+        `${hope} / 100`;
+
+    document.getElementById("coins-text").textContent =
+        `${coins} Coins`;
+
+    document.getElementById("water-bar").style.width =
+        `${Math.min(100, water / 200 * 100)}%`;
+
+    document.getElementById("seeds-bar").style.width =
+        `${Math.min(100, seeds / 100 * 100)}%`;
+
+    document.getElementById("energy-bar").style.width =
+        `${Math.min(100, energy / 120 * 100)}%`;
+
+    document.getElementById("hope-bar").style.width =
+        `${Math.min(100, hope / 100 * 100)}%`;
+}
+
+
+/* ==========================================================
+   GARDEN DISPLAY
+   ========================================================== */
+
+function addPlantToGrid(position, name) {
+
+    if (name) {
+        gardenPlants[position] = name;
+    } else {
+        delete gardenPlants[position];
+    }
+
+    renderGarden();
+}
+
+
+function renderGarden() {
+
+    const grid =
+        document.getElementById("garden-grid");
+
+    grid.innerHTML = "";
+
+    for (let position = 0; position < 25; position++) {
+
+        const tile =
+            document.createElement("div");
+
+        tile.className =
+            "aspect-square bg-[#2a3825] rounded-xl flex items-center justify-center text-3xl border border-emerald-800 cursor-pointer hover:border-emerald-400 transition-colors";
+
+        const plant =
+            gardenPlants[position];
+
+        tile.textContent =
+            plant
+                ? (plantEmoji[plant] || "🌱")
+                : "⬜";
+
+        tile.onclick = () => {
+            const hook = pyodideInstance ? pyodideInstance.globals.get("handle_tile_click") : null;
+            if (!hook) { showToast("Run Topics 1 → 3 first."); return; }
+            const plantName = document.getElementById("crop-selector").value;
+            try {
+                const msg = hook(Math.floor(position / 5), position % 5, plantName);
+                if (msg) showToast(msg);
+            } catch (error) {
+                showToast("Python error: " + error.message.trim().split("\n").pop());
+            } finally {
+                hook.destroy();
+            }
+        };
+
+        grid.appendChild(tile);
+    }
+}
+
+
+/* ==========================================================
+   PLANT DROPDOWN
+   ========================================================== */
+
+function addPlantsToDropdown(plants) {
+
+    const selector =
+        document.getElementById(
+            "crop-selector"
+        );
+
+    selector.innerHTML = "";
+
+    if (!plants) return;
+
+    plants.forEach(
+        ([name, emoji, price]) => {
+
+            plantEmoji[name] = emoji;
+
+            const option =
+                document.createElement("option");
+
+            option.value = name;
+
+            option.textContent =
+                `${emoji} ${name} (${price}c)`;
+
+            selector.appendChild(option);
+        }
+    );
+}
+
+
+/* ==========================================================
+   CLIMATE QUEUE DISPLAY
+   ========================================================== */
+
+function updateClimateQueue(events) {
+
+    const panel =
+        document.getElementById(
+            "climate-queue"
+        );
+
+    panel.innerHTML = "";
+
+    (events || []).forEach(event => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "p-3 bg-amber-950/40 border border-amber-900 rounded-xl text-xs";
+
+        item.textContent = event;
+
+        panel.appendChild(item);
+    });
+}
+
+
+/* ==========================================================
+   ACTION HISTORY DISPLAY
+   ========================================================== */
+
+function pushAction(action) {
+
+    displayActionHistory.push(action);
+
+    if (displayActionHistory.length > 10) {
+        displayActionHistory.shift();
+    }
+
+    renderActionHistory();
+}
+
+
+function renderActionHistory() {
+
+    const panel =
+        document.getElementById(
+            "action-stack"
+        );
+
+    panel.innerHTML = "";
+
+    [...displayActionHistory]
+        .reverse()
+        .forEach(action => {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "bg-emerald-950/60 border-l-2 border-amber-500 px-3 py-2 rounded text-xs text-emerald-100";
+
+            item.textContent =
+                "→ " + action;
+
+            panel.appendChild(item);
+        });
+}
+
+
+/* ==========================================================
+   PLANT BOOK
+   ========================================================== */
+
+function renderPlantBook(
+    rows,
+    unlockedCount,
+    totalCount
+) {
+
+    const list =
+        document.getElementById(
+            "plant-book-list"
+        );
+
+    list.innerHTML = "";
+
+    document.getElementById(
+        "plant-book-empty"
+    ).classList.add("hidden");
+
+    document.getElementById(
+        "plant-book-count"
+    ).textContent =
+        `${unlockedCount} / ${totalCount} unlocked`;
+
+    rows.forEach(
+        ([level, emoji, name, unlocked, note]) => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "flex items-center gap-3 bg-[#1b2219] border border-emerald-900 rounded-xl p-3";
+
+            row.style.marginLeft =
+                `${level * 2}rem`;
+
+            const icon =
+                document.createElement("span");
+
+            icon.className = "text-2xl";
+            icon.textContent = emoji;
+
+            const information =
+                document.createElement("div");
+
+            information.className =
+                "flex-1";
+
+            information.innerHTML =
+                `<div class="font-bold text-white">${name}</div>
+                 <div class="text-xs text-emerald-300/80">${note}</div>`;
+
+            const status =
+                document.createElement("span");
+
+            status.className =
+                "text-[10px] font-bold";
+
+            status.textContent =
+                unlocked
+                    ? "UNLOCKED"
+                    : "LOCKED";
+
+            row.appendChild(icon);
+            row.appendChild(information);
+            row.appendChild(status);
+
+            list.appendChild(row);
+        }
+    );
+}
+
+
+/* ==========================================================
+   UNDO BUTTON
+   ========================================================== */
+
+function triggerUndo() {
+    const hook = pyodideInstance ? pyodideInstance.globals.get("undo_last_action") : null;
+    if (!hook) { showToast("Run Topics 1 → 3 first."); return; }
+    try {
+        const undone = hook();
+        if (undone) {
+            showToast("Undid: " + undone);
+        } else {
+            showToast("Stack is empty.");
+        }
+    } catch (error) {
+        showToast("Python error: " + error.message.trim().split("\n").pop());
+    } finally {
+        hook.destroy();
+    }
+}
+
+
+/* ==========================================================
+   PYTHON EXECUTION
+   ========================================================== */
+
+async function runPythonCode() {
+
+    const output =
+        document.getElementById(
+            "output-console"
+        );
+
+    output.innerHTML =
+        '<span class="text-amber-400">Executing...</span>';
+
+    try {
+
+        await initPyodide();
+
+        const code =
+            document.getElementById(
+                "code-editor"
+            ).value;
+
+        await pyodideInstance.runPythonAsync(
+            code
+        );
+
+    } catch (error) {
+
+        output.innerHTML +=
+            `<span class="text-red-400">\nError: ${error.message}</span>`;
+    }
+}
+
+
+/* ==========================================================
+   TOPIC LOADING
+   ========================================================== */
+
+function loadTopic() {
+
+    const selected =
+        document.getElementById(
+            "topic-selector"
+        ).value;
+
+    document.getElementById(
+        "code-editor"
+    ).value =
+        topicTemplates[selected].code;
+}
+
+
+/* ==========================================================
+   TAB SWITCHING
+   ========================================================== */
+
+function switchTab(tab) {
+
+    ["game", "code", "book"].forEach(name => {
+
+        document.getElementById(
+            "view-" + name
+        ).classList.toggle(
+            "hidden",
+            name !== tab
+        );
+
+        const button =
+            document.getElementById(
+                "tab-" + name
+            );
+
+        button.classList.toggle(
+            "bg-[#283623]",
+            name === tab
+        );
+
+        button.classList.toggle(
+            "text-emerald-100",
+            name === tab
+        );
+
+        button.classList.toggle("text-emerald-400/80", name !== tab);
+
+    });
+}
+
+
+/* ==========================================================
+   TOAST
+   ========================================================== */
+
+function showToast(message) {
+
+    const toast =
+        document.createElement("div");
+
+    toast.className =
+        "fixed bottom-6 right-6 bg-emerald-900 border border-emerald-400 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm";
+
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(
+        () => toast.remove(),
+        2500
+    );
+}
+
+
+/* ==========================================================
+   INITIALIZATION
+   ========================================================== */
+
+window.onload = () => {
+
+    document.getElementById(
+        "version-badge"
+    ).textContent =
+        "v" + APP_VERSION;
+
+    lucide.createIcons();
+
+    renderGarden();
+
+    renderActionHistory();
+
+    updateResources(
+        0,
+        0,
+        0,
+        0,
+        0
+    );
+
+    const selector =
+        document.getElementById(
+            "topic-selector"
+        );
+
+    Object.keys(topicTemplates)
+        .forEach(number => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = number;
+
+            option.textContent =
+                topicTemplates[number].title;
+
+            selector.appendChild(option);
+        });
+
+    loadTopic();
+
+    switchTab("game");
+
+    initPyodide().catch(() => {});
+};
+
+</script>
+
+</body>
+</html>
